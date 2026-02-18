@@ -14,7 +14,6 @@
         }
         #gameCanvas { display: block; width: 100vw; height: 100vh; }
         
-        /* Menu Buttons for Mobile */
         .menu-buttons {
             position: fixed;
             top: 50%;
@@ -50,7 +49,6 @@
             min-width: 200px;
         }
         
-        /* Virtual Joystick - Hidden in menu */
         .joystick-zone {
             position: fixed;
             bottom: 30px;
@@ -61,7 +59,7 @@
             border: 3px solid rgba(255, 255, 255, 0.4);
             z-index: 100;
             touch-action: none;
-            display: none; /* Hidden by default */
+            display: none;
         }
         .joystick-zone.active { display: block; }
         #joystickP1 { left: 30px; }
@@ -89,22 +87,26 @@
             text-shadow: 2px 2px 4px black;
         }
         
+        /* 遊戲開始後隱藏指引 */
         .controls-info {
             position: fixed;
-            bottom: 200px;
+            bottom: 180px;
             left: 50%;
             transform: translateX(-50%);
             color: white;
-            font-size: 16px;
+            font-size: 14px;
             text-align: center;
             background: rgba(0, 0, 0, 0.4);
-            padding: 15px 25px;
-            border-radius: 30px;
-            display: none; /* Hidden in menu */
+            padding: 10px 20px;
+            border-radius: 20px;
+            opacity: 1;
+            transition: opacity 0.3s;
         }
-        .controls-info.active { display: block; }
+        .controls-info.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
         
-        /* How to Play Modal */
         .modal {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -117,31 +119,24 @@
         .modal.active { display: flex; }
         .modal-content {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 40px;
-            border-radius: 30px;
+            padding: 30px;
+            border-radius: 20px;
             max-width: 90%;
-            width: 400px;
+            width: 350px;
             color: white;
             text-align: center;
         }
-        .modal-content h2 {
-            font-size: 32px;
-            margin-bottom: 20px;
-        }
-        .modal-content p {
-            font-size: 18px;
-            line-height: 1.6;
-            margin-bottom: 15px;
-        }
+        .modal-content h2 { font-size: 28px; margin-bottom: 15px; }
+        .modal-content p { font-size: 16px; line-height: 1.5; margin-bottom: 10px; }
         .modal-close {
             background: white;
             color: #764ba2;
             border: none;
-            padding: 15px 40px;
-            font-size: 20px;
+            padding: 12px 30px;
+            font-size: 18px;
             font-weight: bold;
-            border-radius: 30px;
-            margin-top: 20px;
+            border-radius: 25px;
+            margin-top: 15px;
             cursor: pointer;
         }
     </style>
@@ -149,7 +144,6 @@
 <body>
     <canvas id="gameCanvas"></canvas>
     
-    <!-- Menu Buttons -->
     <div class="menu-buttons" id="menuButtons">
         <h1 style="color: white; font-size: 42px; text-shadow: 3px 3px 6px black; margin-bottom: 30px;">🦈 SharkieFish</h1>
         <button class="menu-btn" id="btnPVP">🎮 VS Player<br><small style="font-size: 16px;">2 Players</small></button>
@@ -157,7 +151,6 @@
         <button class="menu-btn help" id="btnHelp">❓ How to Play</button>
     </div>
     
-    <!-- Virtual Joysticks -->
     <div id="joystickP1" class="joystick-zone">
         <div class="joystick-label">P1</div>
         <div class="joystick-knob"></div>
@@ -169,10 +162,9 @@
     
     <div class="controls-info" id="controlsInfo">
         💻 Keyboard: P1 WASD | P2 Arrow Keys<br>
-        📱 Mobile: Drag joysticks
+        📱 Mobile: Drag joysticks to move
     </div>
     
-    <!-- How to Play Modal -->
     <div class="modal" id="helpModal">
         <div class="modal-content">
             <h2>🎮 How to Play</h2>
@@ -180,10 +172,9 @@
             <p>🦈 <b>Bigger sharks</b> can eat smaller sharks</p>
             <p>⏱️ <b>60 seconds</b> to get the highest score</p>
             <p>🏆 <b>Win by score</b> or eating your opponent</p>
-            <hr style="margin: 20px 0; border-color: rgba(255,255,255,0.3);">
-            <p>💻 <b>Player 1:</b> WASD keys</p>
-            <p>💻 <b>Player 2:</b> Arrow keys</p>
-            <p>📱 <b>Mobile:</b> Drag the joysticks</p>
+            <hr style="margin: 15px 0; border-color: rgba(255,255,255,0.3);">
+            <p>💻 <b>Player 1:</b> WASD keys or Left Joystick</p>
+            <p>💻 <b>Player 2:</b> Arrow keys or Right Joystick</p>
             <button class="modal-close" id="closeModal">Got it!</button>
         </div>
     </div>
@@ -226,7 +217,6 @@
         window.addEventListener('keydown', (e) => keys[e.key] = true);
         window.addEventListener('keyup', (e) => keys[e.key] = false);
         
-        // Touch buttons for menu
         document.getElementById('btnPVP').addEventListener('click', () => startGame('PVP'));
         document.getElementById('btnPVP').addEventListener('touchstart', (e) => { e.preventDefault(); startGame('PVP'); });
         
@@ -244,7 +234,8 @@
             menuButtons.style.display = 'none';
             joystickP1.classList.add('active');
             joystickP2.classList.add('active');
-            controlsInfo.classList.add('active');
+            // 遊戲開始後隱藏指引
+            controlsInfo.classList.add('hidden');
             initGame(mode);
             currentState = GAME_STATE.PLAYING;
         }
@@ -287,7 +278,6 @@
                 joystickData[playerId] = { active: true, dx: dx / maxDist, dy: dy / maxDist };
             };
             
-            // Touch events
             zone.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 const touch = e.touches[0];
@@ -310,7 +300,6 @@
                 handleEnd();
             });
             
-            // Mouse events (for testing on desktop)
             let mouseDown = false;
             zone.addEventListener('mousedown', (e) => {
                 mouseDown = true;
@@ -336,11 +325,22 @@
                 this.isAI = isAI; this.controls = controls;
                 this.size = 20; this.score = 0; this.level = 1;
                 this.speed = 4; this.alive = true; this.glowSize = 0;
+                this.angle = 0;
             }
             
             update(target) {
                 if (!this.alive) return;
+                
+                const oldX = this.x, oldY = this.y;
                 this.isAI ? this.aiMove(target) : this.playerMove();
+                
+                // 計算朝向角度
+                const dx = this.x - oldX;
+                const dy = this.y - oldY;
+                if (dx !== 0 || dy !== 0) {
+                    this.angle = Math.atan2(dy, dx);
+                }
+                
                 this.x = Math.max(this.size, Math.min(canvas.width - this.size, this.x));
                 this.y = Math.max(this.size, Math.min(canvas.height - this.size, this.y));
                 if (this.glowSize > 0) this.glowSize -= 0.5;
@@ -388,24 +388,71 @@
             
             draw() {
                 if (!this.alive) return;
+                
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                
+                // 光暈效果
                 if (this.glowSize > 0) {
-                    const g = ctx.createRadialGradient(this.x, this.y, this.size, this.x, this.y, this.size + this.glowSize);
-                    g.addColorStop(0, this.color); g.addColorStop(1, 'transparent');
-                    ctx.fillStyle = g;
-                    ctx.beginPath(); ctx.arc(this.x, this.y, this.size + this.glowSize, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = this.color + '40';
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, (this.size + this.glowSize) * 1.5, this.size + this.glowSize, 0, 0, Math.PI * 2);
+                    ctx.fill();
                 }
+                
+                // 魚身體（橢圓形）
                 ctx.fillStyle = this.color;
-                ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(0, 0, this.size * 1.5, this.size, 0, 0, Math.PI * 2);
+                ctx.fill();
                 
-                const off = this.size * 0.35, sz = Math.max(3, this.size * 0.15);
+                // 魚尾巴
+                ctx.beginPath();
+                ctx.moveTo(-this.size * 1.2, 0);
+                ctx.lineTo(-this.size * 2, -this.size * 0.6);
+                ctx.lineTo(-this.size * 2, this.size * 0.6);
+                ctx.closePath();
+                ctx.fill();
+                
+                // 魚鳍（上方）
+                ctx.beginPath();
+                ctx.moveTo(0, -this.size * 0.8);
+                ctx.lineTo(this.size * 0.3, -this.size * 1.3);
+                ctx.lineTo(this.size * 0.8, -this.size * 0.6);
+                ctx.closePath();
+                ctx.fill();
+                
+                // 魚鳍（下方）
+                ctx.beginPath();
+                ctx.moveTo(0, this.size * 0.8);
+                ctx.lineTo(this.size * 0.3, this.size * 1.3);
+                ctx.lineTo(this.size * 0.8, this.size * 0.6);
+                ctx.closePath();
+                ctx.fill();
+                
+                // 眼睛
                 ctx.fillStyle = 'white';
-                ctx.beginPath(); ctx.arc(this.x - off, this.y - off, sz, 0, Math.PI * 2); ctx.arc(this.x + off, this.y - off, sz, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = 'black';
-                ctx.beginPath(); ctx.arc(this.x - off, this.y - off, sz * 0.5, 0, Math.PI * 2); ctx.arc(this.x + off, this.y - off, sz * 0.5, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath();
+                ctx.arc(this.size * 0.8, -this.size * 0.3, this.size * 0.25, 0, Math.PI * 2);
+                ctx.fill();
                 
-                ctx.fillStyle = 'white'; ctx.font = 'bold 14px Arial'; ctx.textAlign = 'center';
+                ctx.fillStyle = 'black';
+                ctx.beginPath();
+                ctx.arc(this.size * 0.9, -this.size * 0.3, this.size * 0.12, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.restore();
+                
+                // 等級標籤（不隨旋轉）
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 14px Arial';
+                ctx.textAlign = 'center';
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 3;
                 const label = this.isAI ? `AI LV${this.level}` : `P${this.controls.id === 'p1' ? 1 : 2} LV${this.level}`;
-                ctx.fillText(label, this.x, this.y - this.size - 10);
+                ctx.strokeText(label, this.x, this.y - this.size - 15);
+                ctx.fillText(label, this.x, this.y - this.size - 15);
             }
         }
         
@@ -418,15 +465,33 @@
                 const colors = [COLORS.FISH_YELLOW, COLORS.FISH_ORANGE, COLORS.FISH_GREEN, COLORS.FISH_PURPLE];
                 this.color = colors[Math.floor(Math.random() * colors.length)];
                 this.vx = (Math.random() - 0.5); this.vy = (Math.random() - 0.5);
+                this.angle = Math.random() * Math.PI * 2;
             }
             update() {
                 this.x += this.vx; this.y += this.vy;
                 if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
                 if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+                this.angle = Math.atan2(this.vy, this.vx);
             }
             draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                
                 ctx.fillStyle = this.color;
-                ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
+                // 身體
+                ctx.beginPath();
+                ctx.ellipse(0, 0, this.size * 1.2, this.size * 0.8, 0, 0, Math.PI * 2);
+                ctx.fill();
+                // 尾巴
+                ctx.beginPath();
+                ctx.moveTo(-this.size, 0);
+                ctx.lineTo(-this.size * 1.8, -this.size * 0.5);
+                ctx.lineTo(-this.size * 1.8, this.size * 0.5);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.restore();
             }
         }
         
@@ -546,7 +611,7 @@
                     menuButtons.style.display = 'flex';
                     joystickP1.classList.remove('active');
                     joystickP2.classList.remove('active');
-                    controlsInfo.classList.remove('active');
+                    controlsInfo.classList.remove('hidden');
                 }
                 if (e.key === 'Enter') { initGame(gameMode); currentState = GAME_STATE.PLAYING; }
             }
