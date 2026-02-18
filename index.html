@@ -5,89 +5,159 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🦈 SharkieFish - Shark Eating Game</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             overflow: hidden;
             font-family: 'Arial', sans-serif;
             background: linear-gradient(180deg, #006994 0%, #003d5c 100%);
             touch-action: none;
         }
-        #gameCanvas {
-            display: block;
-            width: 100vw;
-            height: 100vh;
+        #gameCanvas { display: block; width: 100vw; height: 100vh; }
+        
+        /* Menu Buttons for Mobile */
+        .menu-buttons {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
         }
-        /* Virtual Joystick Styles */
+        .menu-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            min-width: 280px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .menu-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+        .menu-btn.help {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            font-size: 20px;
+            padding: 15px 30px;
+            min-width: 200px;
+        }
+        
+        /* Virtual Joystick - Hidden in menu */
         .joystick-zone {
             position: fixed;
-            bottom: 20px;
-            width: 120px;
-            height: 120px;
+            bottom: 30px;
+            width: 140px;
+            height: 140px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.15);
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            border: 3px solid rgba(255, 255, 255, 0.4);
             z-index: 100;
             touch-action: none;
+            display: none; /* Hidden by default */
         }
-        #joystickP1 {
-            left: 20px;
-        }
-        #joystickP2 {
-            right: 20px;
-        }
+        .joystick-zone.active { display: block; }
+        #joystickP1 { left: 30px; }
+        #joystickP2 { right: 30px; }
+        
         .joystick-knob {
             position: absolute;
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(255, 255, 255, 0.6);
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
         }
         .joystick-label {
             position: absolute;
-            top: -30px;
+            top: -35px;
             left: 50%;
             transform: translateX(-50%);
             color: white;
-            font-size: 14px;
+            font-size: 18px;
             font-weight: bold;
-            text-shadow: 1px 1px 2px black;
+            text-shadow: 2px 2px 4px black;
         }
+        
         .controls-info {
             position: fixed;
-            bottom: 150px;
+            bottom: 200px;
             left: 50%;
             transform: translateX(-50%);
             color: white;
-            font-size: 14px;
+            font-size: 16px;
             text-align: center;
-            opacity: 0.9;
-            text-shadow: 1px 1px 2px black;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 8px 16px;
-            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px 25px;
+            border-radius: 30px;
+            display: none; /* Hidden in menu */
         }
-        @media (min-width: 768px) {
-            .joystick-zone {
-                display: none;
-            }
-            .controls-info {
-                bottom: 10px;
-            }
+        .controls-info.active { display: block; }
+        
+        /* How to Play Modal */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 300;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px;
+            border-radius: 30px;
+            max-width: 90%;
+            width: 400px;
+            color: white;
+            text-align: center;
+        }
+        .modal-content h2 {
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+        .modal-content p {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        .modal-close {
+            background: white;
+            color: #764ba2;
+            border: none;
+            padding: 15px 40px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 30px;
+            margin-top: 20px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
     
-    <!-- Virtual Joysticks for Mobile -->
+    <!-- Menu Buttons -->
+    <div class="menu-buttons" id="menuButtons">
+        <h1 style="color: white; font-size: 42px; text-shadow: 3px 3px 6px black; margin-bottom: 30px;">🦈 SharkieFish</h1>
+        <button class="menu-btn" id="btnPVP">🎮 VS Player<br><small style="font-size: 16px;">2 Players</small></button>
+        <button class="menu-btn" id="btnAI">🤖 VS AI<br><small style="font-size: 16px;">Single Player</small></button>
+        <button class="menu-btn help" id="btnHelp">❓ How to Play</button>
+    </div>
+    
+    <!-- Virtual Joysticks -->
     <div id="joystickP1" class="joystick-zone">
         <div class="joystick-label">P1</div>
         <div class="joystick-knob"></div>
@@ -97,14 +167,35 @@
         <div class="joystick-knob"></div>
     </div>
     
-    <div class="controls-info">
+    <div class="controls-info" id="controlsInfo">
         💻 Keyboard: P1 WASD | P2 Arrow Keys<br>
-        📱 Mobile: Use joysticks below
+        📱 Mobile: Drag joysticks
+    </div>
+    
+    <!-- How to Play Modal -->
+    <div class="modal" id="helpModal">
+        <div class="modal-content">
+            <h2>🎮 How to Play</h2>
+            <p>🐟 <b>Eat smaller fish</b> to grow bigger!</p>
+            <p>🦈 <b>Bigger sharks</b> can eat smaller sharks</p>
+            <p>⏱️ <b>60 seconds</b> to get the highest score</p>
+            <p>🏆 <b>Win by score</b> or eating your opponent</p>
+            <hr style="margin: 20px 0; border-color: rgba(255,255,255,0.3);">
+            <p>💻 <b>Player 1:</b> WASD keys</p>
+            <p>💻 <b>Player 2:</b> Arrow keys</p>
+            <p>📱 <b>Mobile:</b> Drag the joysticks</p>
+            <button class="modal-close" id="closeModal">Got it!</button>
+        </div>
     </div>
     
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        const menuButtons = document.getElementById('menuButtons');
+        const controlsInfo = document.getElementById('controlsInfo');
+        const helpModal = document.getElementById('helpModal');
+        const joystickP1 = document.getElementById('joystickP1');
+        const joystickP2 = document.getElementById('joystickP2');
         
         function resizeCanvas() {
             canvas.width = window.innerWidth;
@@ -132,42 +223,57 @@
         const keys = {};
         const joystickData = { p1: { active: false, dx: 0, dy: 0 }, p2: { active: false, dx: 0, dy: 0 } };
         
-        // Keyboard controls
         window.addEventListener('keydown', (e) => keys[e.key] = true);
         window.addEventListener('keyup', (e) => keys[e.key] = false);
         
-        // Virtual Joystick Setup
+        // Touch buttons for menu
+        document.getElementById('btnPVP').addEventListener('click', () => startGame('PVP'));
+        document.getElementById('btnPVP').addEventListener('touchstart', (e) => { e.preventDefault(); startGame('PVP'); });
+        
+        document.getElementById('btnAI').addEventListener('click', () => startGame('AI'));
+        document.getElementById('btnAI').addEventListener('touchstart', (e) => { e.preventDefault(); startGame('AI'); });
+        
+        document.getElementById('btnHelp').addEventListener('click', () => helpModal.classList.add('active'));
+        document.getElementById('btnHelp').addEventListener('touchstart', (e) => { e.preventDefault(); helpModal.classList.add('active'); });
+        
+        document.getElementById('closeModal').addEventListener('click', () => helpModal.classList.remove('active'));
+        document.getElementById('closeModal').addEventListener('touchstart', (e) => { e.preventDefault(); helpModal.classList.remove('active'); });
+        
+        function startGame(mode) {
+            gameMode = mode;
+            menuButtons.style.display = 'none';
+            joystickP1.classList.add('active');
+            joystickP2.classList.add('active');
+            controlsInfo.classList.add('active');
+            initGame(mode);
+            currentState = GAME_STATE.PLAYING;
+        }
+        
         function setupJoystick(elementId, playerId) {
             const zone = document.getElementById(elementId);
             const knob = zone.querySelector('.joystick-knob');
-            const rect = zone.getBoundingClientRect();
-            const centerX = rect.width / 2;
-            const centerY = rect.height / 2;
-            const maxDist = 35;
+            const maxDist = 40;
+            let startX, startY, currentTouchId = null;
             
-            let startX, startY;
+            const handleStart = (clientX, clientY) => {
+                const rect = zone.getBoundingClientRect();
+                startX = rect.left + rect.width / 2;
+                startY = rect.top + rect.height / 2;
+                updateJoystick(clientX, clientY);
+            };
             
-            zone.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                const touch = e.touches[0];
-                const zoneRect = zone.getBoundingClientRect();
-                startX = zoneRect.left + centerX;
-                startY = zoneRect.top + centerY;
-                updateJoystick(touch.clientX, touch.clientY);
-            }, { passive: false });
+            const handleMove = (clientX, clientY) => {
+                if (startX === undefined) return;
+                updateJoystick(clientX, clientY);
+            };
             
-            zone.addEventListener('touchmove', (e) => {
-                e.preventDefault();
-                const touch = e.touches[0];
-                updateJoystick(touch.clientX, touch.clientY);
-            }, { passive: false });
-            
-            zone.addEventListener('touchend', () => {
+            const handleEnd = () => {
                 joystickData[playerId] = { active: false, dx: 0, dy: 0 };
                 knob.style.transform = `translate(-50%, -50%)`;
-            });
+                startX = undefined;
+            };
             
-            function updateJoystick(clientX, clientY) {
+            const updateJoystick = (clientX, clientY) => {
                 let dx = clientX - startX;
                 let dy = clientY - startY;
                 const dist = Math.sqrt(dx * dx + dy * dy);
@@ -179,7 +285,46 @@
                 
                 knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
                 joystickData[playerId] = { active: true, dx: dx / maxDist, dy: dy / maxDist };
-            }
+            };
+            
+            // Touch events
+            zone.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                currentTouchId = touch.identifier;
+                handleStart(touch.clientX, touch.clientY);
+            }, { passive: false });
+            
+            zone.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                for (let touch of e.touches) {
+                    if (touch.identifier === currentTouchId) {
+                        handleMove(touch.clientX, touch.clientY);
+                        break;
+                    }
+                }
+            }, { passive: false });
+            
+            zone.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                handleEnd();
+            });
+            
+            // Mouse events (for testing on desktop)
+            let mouseDown = false;
+            zone.addEventListener('mousedown', (e) => {
+                mouseDown = true;
+                handleStart(e.clientX, e.clientY);
+            });
+            
+            zone.addEventListener('mousemove', (e) => {
+                if (mouseDown) handleMove(e.clientX, e.clientY);
+            });
+            
+            zone.addEventListener('mouseup', () => {
+                mouseDown = false;
+                handleEnd();
+            });
         }
         
         setupJoystick('joystickP1', 'p1');
@@ -190,35 +335,24 @@
                 this.x = x; this.y = y; this.color = color;
                 this.isAI = isAI; this.controls = controls;
                 this.size = 20; this.score = 0; this.level = 1;
-                this.speed = 4; this.alive = true;
-                this.glowSize = 0;
+                this.speed = 4; this.alive = true; this.glowSize = 0;
             }
             
             update(target) {
                 if (!this.alive) return;
-                
-                if (this.isAI) {
-                    this.aiMove(target);
-                } else {
-                    this.playerMove();
-                }
-                
+                this.isAI ? this.aiMove(target) : this.playerMove();
                 this.x = Math.max(this.size, Math.min(canvas.width - this.size, this.x));
                 this.y = Math.max(this.size, Math.min(canvas.height - this.size, this.y));
-                
                 if (this.glowSize > 0) this.glowSize -= 0.5;
             }
             
             playerMove() {
                 let dx = 0, dy = 0;
-                
-                // Keyboard
                 if (keys[this.controls.up]) dy -= 1;
                 if (keys[this.controls.down]) dy += 1;
                 if (keys[this.controls.left]) dx -= 1;
                 if (keys[this.controls.right]) dx += 1;
                 
-                // Joystick (mobile)
                 const joyId = this.controls.id === 'p1' ? 'p1' : 'p2';
                 if (joystickData[joyId].active) {
                     dx = joystickData[joyId].dx;
@@ -226,7 +360,7 @@
                 }
                 
                 if (dx !== 0 || dy !== 0) {
-                    const len = Math.sqrt(dx * dx + dy * dy);
+                    const len = Math.sqrt(dx * dx + dy * dy) || 1;
                     this.x += (dx / len) * this.speed;
                     this.y += (dy / len) * this.speed;
                 }
@@ -234,8 +368,7 @@
             
             aiMove(target) {
                 if (!target) return;
-                let dx = target.x - this.x;
-                let dy = target.y - this.y;
+                let dx = target.x - this.x, dy = target.y - this.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 if (dist > 0) {
                     const run = target.size && target.size > this.size * 1.2;
@@ -255,25 +388,21 @@
             
             draw() {
                 if (!this.alive) return;
-                
                 if (this.glowSize > 0) {
                     const g = ctx.createRadialGradient(this.x, this.y, this.size, this.x, this.y, this.size + this.glowSize);
                     g.addColorStop(0, this.color); g.addColorStop(1, 'transparent');
                     ctx.fillStyle = g;
                     ctx.beginPath(); ctx.arc(this.x, this.y, this.size + this.glowSize, 0, Math.PI * 2); ctx.fill();
                 }
-                
                 ctx.fillStyle = this.color;
                 ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
                 
-                // Eyes
                 const off = this.size * 0.35, sz = Math.max(3, this.size * 0.15);
                 ctx.fillStyle = 'white';
                 ctx.beginPath(); ctx.arc(this.x - off, this.y - off, sz, 0, Math.PI * 2); ctx.arc(this.x + off, this.y - off, sz, 0, Math.PI * 2); ctx.fill();
                 ctx.fillStyle = 'black';
                 ctx.beginPath(); ctx.arc(this.x - off, this.y - off, sz * 0.5, 0, Math.PI * 2); ctx.arc(this.x + off, this.y - off, sz * 0.5, 0, Math.PI * 2); ctx.fill();
                 
-                // Label
                 ctx.fillStyle = 'white'; ctx.font = 'bold 14px Arial'; ctx.textAlign = 'center';
                 const label = this.isAI ? `AI LV${this.level}` : `P${this.controls.id === 'p1' ? 1 : 2} LV${this.level}`;
                 ctx.fillText(label, this.x, this.y - this.size - 10);
@@ -334,7 +463,6 @@
             const g = ctx.createLinearGradient(0, 0, 0, canvas.height);
             g.addColorStop(0, COLORS.OCEAN_TOP); g.addColorStop(1, COLORS.OCEAN_BOTTOM);
             ctx.fillStyle = g; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
             ctx.fillStyle = 'rgba(255,255,255,0.1)';
             for (let i = 0; i < 5; i++) {
                 const x = (Date.now() * 0.05 + i * 100) % canvas.width;
@@ -346,10 +474,8 @@
         function updateGame(deltaTime) {
             gameTime -= deltaTime;
             if (gameTime <= 0) { currentState = GAME_STATE.GAME_OVER; return; }
-            
             if (fishes.length < 15) fishes.push(new Fish());
             fishes.forEach(f => f.update());
-            
             player1.update(player2); player2.update(player1.alive ? player1 : fishes[0]);
             
             fishes = fishes.filter(fish => {
@@ -375,27 +501,12 @@
         
         function drawMenu() {
             drawBackground();
-            ctx.fillStyle = 'white'; ctx.textAlign = 'center';
-            ctx.font = 'bold 48px Arial'; ctx.fillText('🦈 SharkieFish', canvas.width / 2, canvas.height / 4);
-            ctx.font = 'bold 28px Arial'; ctx.fillText('Shark Eating Battle', canvas.width / 2, canvas.height / 4 + 50);
-            
-            ctx.font = '24px Arial';
-            const opts = [
-                { key: '1', text: 'VS Player (2 Players)', y: canvas.height / 2 - 30 },
-                { key: '2', text: 'VS AI (Single Player)', y: canvas.height / 2 + 30 },
-                { key: '3', text: 'How to Play', y: canvas.height / 2 + 90 }
-            ];
-            opts.forEach(opt => ctx.fillText(`[${opt.key}] ${opt.text}`, canvas.width / 2, opt.y));
-            
-            ctx.font = '16px Arial'; ctx.fillStyle = 'rgba(255,255,255,0.7)';
-            ctx.fillText('Player 1: WASD / Left Joystick  |  Player 2: Arrow Keys / Right Joystick', canvas.width / 2, canvas.height - 50);
         }
         
         function drawGame() {
             drawBackground();
             fishes.forEach(f => f.draw()); particles.forEach(p => p.draw());
             player1.draw(); player2.draw();
-            
             ctx.fillStyle = 'white'; ctx.font = 'bold 20px Arial'; ctx.textAlign = 'left';
             ctx.fillText(`Time: ${Math.ceil(gameTime)}s`, 20, 40);
             ctx.fillStyle = COLORS.PLAYER1; ctx.fillText(`P1: ${player1.score} LV${player1.level}`, 20, 70);
@@ -405,13 +516,11 @@
         function drawGameOver() {
             drawBackground(); ctx.fillStyle = 'white'; ctx.textAlign = 'center';
             ctx.font = 'bold 48px Arial';
-            
             let winner = 'Tie!';
             if (!player1.alive) winner = gameMode === 'AI' ? 'AI Wins!' : 'Player 2 Wins!';
             else if (!player2.alive) winner = 'Player 1 Wins!';
             else if (player1.score > player2.score) winner = 'Player 1 Wins!';
             else if (player2.score > player1.score) winner = gameMode === 'AI' ? 'AI Wins!' : 'Player 2 Wins!';
-            
             ctx.fillText(winner, canvas.width / 2, canvas.height / 3);
             ctx.font = '24px Arial';
             ctx.fillText(`Player 1: ${player1.score} pts`, canvas.width / 2, canvas.height / 2);
@@ -422,7 +531,6 @@
         
         function gameLoop(timestamp) {
             const deltaTime = (timestamp - lastTime) / 1000; lastTime = timestamp;
-            
             switch (currentState) {
                 case GAME_STATE.MENU: drawMenu(); break;
                 case GAME_STATE.PLAYING: updateGame(deltaTime); drawGame(); break;
@@ -432,12 +540,14 @@
         }
         
         window.addEventListener('keydown', (e) => {
-            if (currentState === GAME_STATE.MENU) {
-                if (e.key === '1') { initGame('PVP'); currentState = GAME_STATE.PLAYING; }
-                if (e.key === '2') { initGame('AI'); currentState = GAME_STATE.PLAYING; }
-                if (e.key === '3') { alert('How to Play:\n\nEat smaller fish to grow bigger!\nBigger sharks can eat smaller sharks.\n\nControls:\n- Player 1: WASD or Left Joystick\n- Player 2: Arrow Keys or Right Joystick\n\nGoal: Get the highest score in 60 seconds!'); }
-            } else if (currentState === GAME_STATE.GAME_OVER) {
-                if (e.key === 'r' || e.key === 'R') currentState = GAME_STATE.MENU;
+            if (currentState === GAME_STATE.GAME_OVER) {
+                if (e.key === 'r' || e.key === 'R') {
+                    currentState = GAME_STATE.MENU;
+                    menuButtons.style.display = 'flex';
+                    joystickP1.classList.remove('active');
+                    joystickP2.classList.remove('active');
+                    controlsInfo.classList.remove('active');
+                }
                 if (e.key === 'Enter') { initGame(gameMode); currentState = GAME_STATE.PLAYING; }
             }
         });
