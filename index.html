@@ -87,7 +87,6 @@
             text-shadow: 2px 2px 4px black;
         }
         
-        /* 遊戲開始後隱藏指引 */
         .controls-info {
             position: fixed;
             bottom: 180px;
@@ -234,7 +233,6 @@
             menuButtons.style.display = 'none';
             joystickP1.classList.add('active');
             joystickP2.classList.add('active');
-            // 遊戲開始後隱藏指引
             controlsInfo.classList.add('hidden');
             initGame(mode);
             currentState = GAME_STATE.PLAYING;
@@ -328,13 +326,17 @@
                 this.angle = 0;
             }
             
-            update(target) {
+            update(player, fishes) {
                 if (!this.alive) return;
                 
                 const oldX = this.x, oldY = this.y;
-                this.isAI ? this.aiMove(target) : this.playerMove();
                 
-                // 計算朝向角度
+                if (this.isAI) {
+                    this.aiMove(player, fishes);
+                } else {
+                    this.playerMove();
+                }
+                
                 const dx = this.x - oldX;
                 const dy = this.y - oldY;
                 if (dx !== 0 || dy !== 0) {
@@ -366,15 +368,77 @@
                 }
             }
             
-            aiMove(target) {
-                if (!target) return;
-                let dx = target.x - this.x, dy = target.y - this.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist > 0) {
-                    const run = target.size && target.size > this.size * 1.2;
-                    const mult = run ? -0.8 : 0.8;
-                    this.x += (dx / dist) * this.speed * mult;
-                    this.y += (dy / dist) * this.speed * mult;
+            // 🆕 IMPROVED AI - Actively hunts fish to grow
+            aiMove(player, fishes) {
+                if (!fishes || fishes.length === 0) return;
+                
+                let target = null;
+                let minDist = Infinity;
+                let targetType = 'fish'; // 'fish' or 'player'
+                
+                // Find nearest edible fish (smaller than AI)
+                for (let fish of fishes) {
+                    if (fish.size < this.size) {
+                        const dx = fish.x - this.x;
+                        const dy = fish.y - this.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            target = fish;
+                        }
+                    }
+                }
+                
+                // If no edible fish nearby, check if we can eat player
+                if (!target && player && player.alive) {
+                    if (this.size > player.size * 1.2) {
+                        const dx = player.x - this.x;
+                        const dy = player.y - this.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 300) { // Only chase player if close enough
+                            target = player;
+                            targetType = 'player';
+                            minDist = dist;
+                        }
+                    }
+                }
+                
+                // If player is bigger and close, RUN AWAY
+                if (player && player.alive && player.size > this.size * 1.2) {
+                    const dx = player.x - this.x;
+                    const dy = player.y - this.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 200) {
+                        // Run away from player
+                        this.x -= (dx / dist) * this.speed * 1.2;
+                        this.y -= (dy / dist) * this.speed * 1.2;
+                        return;
+                    }
+                }
+                
+                // Move toward target (fish or player)
+                if (target) {
+                    const dx = target.x - this.x;
+                    const dy = target.y - this.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist > 0) {
+                        const speedMultiplier = targetType === 'player' ? 1.1 : 1.0;
+                        this.x += (dx / dist) * this.speed * speedMultiplier;
+                        this.y += (dy / dist) * this.speed * speedMultiplier;
+                    }
+                } else {
+                    // No target - wander randomly toward center area
+                    const centerX = canvas.width / 2;
+                    const centerY = canvas.height / 2;
+                    const dx = centerX - this.x;
+                    const dy = centerY - this.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist > 50) {
+                        this.x += (dx / dist) * this.speed * 0.5;
+                        this.y += (dy / dist) * this.speed * 0.5;
+                    }
                 }
             }
             
@@ -393,7 +457,6 @@
                 ctx.translate(this.x, this.y);
                 ctx.rotate(this.angle);
                 
-                // 光暈效果
                 if (this.glowSize > 0) {
                     ctx.fillStyle = this.color + '40';
                     ctx.beginPath();
@@ -401,13 +464,11 @@
                     ctx.fill();
                 }
                 
-                // 魚身體（橢圓形）
                 ctx.fillStyle = this.color;
                 ctx.beginPath();
                 ctx.ellipse(0, 0, this.size * 1.5, this.size, 0, 0, Math.PI * 2);
                 ctx.fill();
                 
-                // 魚尾巴
                 ctx.beginPath();
                 ctx.moveTo(-this.size * 1.2, 0);
                 ctx.lineTo(-this.size * 2, -this.size * 0.6);
@@ -415,7 +476,6 @@
                 ctx.closePath();
                 ctx.fill();
                 
-                // 魚鳍（上方）
                 ctx.beginPath();
                 ctx.moveTo(0, -this.size * 0.8);
                 ctx.lineTo(this.size * 0.3, -this.size * 1.3);
@@ -423,7 +483,6 @@
                 ctx.closePath();
                 ctx.fill();
                 
-                // 魚鳍（下方）
                 ctx.beginPath();
                 ctx.moveTo(0, this.size * 0.8);
                 ctx.lineTo(this.size * 0.3, this.size * 1.3);
@@ -431,7 +490,6 @@
                 ctx.closePath();
                 ctx.fill();
                 
-                // 眼睛
                 ctx.fillStyle = 'white';
                 ctx.beginPath();
                 ctx.arc(this.size * 0.8, -this.size * 0.3, this.size * 0.25, 0, Math.PI * 2);
@@ -444,7 +502,6 @@
                 
                 ctx.restore();
                 
-                // 等級標籤（不隨旋轉）
                 ctx.fillStyle = 'white';
                 ctx.font = 'bold 14px Arial';
                 ctx.textAlign = 'center';
@@ -479,11 +536,10 @@
                 ctx.rotate(this.angle);
                 
                 ctx.fillStyle = this.color;
-                // 身體
                 ctx.beginPath();
                 ctx.ellipse(0, 0, this.size * 1.2, this.size * 0.8, 0, 0, Math.PI * 2);
                 ctx.fill();
-                // 尾巴
+                
                 ctx.beginPath();
                 ctx.moveTo(-this.size, 0);
                 ctx.lineTo(-this.size * 1.8, -this.size * 0.5);
@@ -541,7 +597,10 @@
             if (gameTime <= 0) { currentState = GAME_STATE.GAME_OVER; return; }
             if (fishes.length < 15) fishes.push(new Fish());
             fishes.forEach(f => f.update());
-            player1.update(player2); player2.update(player1.alive ? player1 : fishes[0]);
+            
+            // 🆕 Pass fishes array to AI
+            player1.update(player2, fishes); 
+            player2.update(player1.alive ? player1 : null, fishes);
             
             fishes = fishes.filter(fish => {
                 if (player1.alive && checkCollision(player1, fish)) {
